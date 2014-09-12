@@ -25,3 +25,4 @@ coverage
 envy_services
 log/rabbitmq
 docker_login
+vpn

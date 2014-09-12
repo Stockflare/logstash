@@ -1,0 +1,37 @@
+#!/bin/bash
+cd /vagrant
+echo Starting required service containers
+export HOST_NAME=192.168.56.75
+
+# Stop and remove all containers
+script/vagrant/docker_clean
+
+# login to docker index
+script/vagrant/docker_login
+
+# Start etcd
+docker run --name=etcd --detach=true --publish=4001:4001 --publish=7001:7001 coreos/etcd
+read -t5 -n1 -r -p "Waiting for etcd to start..." key
+
+# Populate etcd with environment data
+docker run stratmm/envy service set --name etcd --host $HOST_NAME --ports 4001 7001 --etcd_host $HOST_NAME
+docker run stratmm/envy service set --name elasticsearch --host $HOST_NAME --ports 9200 9300 --etcd_host $HOST_NAME
+docker run stratmm/envy service set --name kibana --host $HOST_NAME --ports 8800 8800 --etcd_host $HOST_NAME
+docker run stratmm/envy service keys --name etcd --etcd_host $HOST_NAME
+docker run stratmm/envy service keys --name elasticsearch --etcd_host $HOST_NAME
+docker run stratmm/envy service keys --name kibana --etcd_host $HOST_NAME
+
+# Start elasticsearch
+docker run --name=elasticsearch --detach=true --publish=9200:9200 --publish=9300:9300 elasticsearch
+read -t5 -n1 -r -p "Waiting for elasticsearch to start..." key
+
+# Start kibana
+docker run --name=kibana --detach=true --publish=8800:8800 --env=ES_PORT_9200_TCP_ADDR:localhost --env=ES_PORT_9200_TCP_PORT:9200 kibana
+read -t5 -n1 -r -p "Waiting for kibana to start..." key
+
+# Start logstash
+docker run --name=logstash --detach=true --publish=514:514 --publish=9292:9292 --link=elasticsearch:es --env EXTRA_CONFIG=true --volume=/vagrant/docker/logstash/extra_config_elasticsearch:/extra_config --volumes-from=elasticsearch logstash
+
+read -t5 -n1 -r -p "Waiting for Logstash to start..." key
+
+echo "All services started"

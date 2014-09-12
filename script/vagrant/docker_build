@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+cd /vagrant
+
+# Stop and remove all containers
+script/vagrant/docker_clean
+
+# login to docker index
+script/vagrant/docker_login
+
+# Build Elasticsearch
+docker build --tag=elasticsearch docker/elasticsearch
+
+# Build Kiban
+docker build --tag=kibana docker/kibana
+
+# Build Logstash
+docker build --tag=logstash docker/logstash
+
+# Build main web project
+# docker build --tag=web .

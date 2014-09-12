@@ -1,0 +1,8 @@
+#!/bin/bash
+export ETCD_HOST=192.168.56.20
+if [ "$#" == 0 ]
+then
+  docker run --name=web --publish=2345:2345 --env ETCD_HOST=$ETCD_HOST --env-file=.env --volume=/vagrant:/api --tty=false --interactive=false --detach=true web
+else
+  docker run --name=web_run --env ETCD_HOST=$ETCD_HOST --env-file=.env --volume=/vagrant:/api --tty=true --interactive=true --detach=false --rm=true web $@
+fi
